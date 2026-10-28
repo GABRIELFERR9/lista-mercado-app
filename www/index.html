@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<title>Mercado</title>
+<style>
+  :root{
+    --fundo:#12101a;
+    --superficie:#1c1926;
+    --superficie-alta:#262233;
+    --linha:#332e45;
+    --texto:#f2f0f7;
+    --apagado:#8f8aa3;
+    --tenue:#5e5872;
+    --lima:#b8ff3c;
+    --lima-escura:#7fc21a;
+    --ambar:#ffb020;
+    --rosa:#ff5470;
+    --raio:16px;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; overflow:hidden; }
+
+  body{
+    background:var(--fundo);
+    color:var(--texto);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    display:flex; flex-direction:column;
+    padding-top:env(safe-area-inset-top);
+    user-select:none;
+  }
+  input{ user-select:text; }
+
+  /* ================= CABEÇALHO ================= */
+  header{
+    padding:16px 18px 14px;
+    border-bottom:1px solid var(--linha);
+    flex:none;
+    background:linear-gradient(180deg,#191527 0%,var(--fundo) 100%);
+  }
+  .topo{ display:flex; align-items:center; gap:14px; }
+
+  .anel{ width:56px; height:56px; flex:none; position:relative; }
+  .anel svg{ transform:rotate(-90deg); }
+  .anel circle{ fill:none; stroke-width:6; stroke-linecap:round; }
+  .anel .trilho{ stroke:var(--linha); }
+  .anel .barra{ stroke:var(--lima); transition:stroke-dashoffset .5s cubic-bezier(.2,.9,.3,1); }
+  .anel b{
+    position:absolute; inset:0; display:grid; place-items:center;
+    font-size:15px; font-weight:800; font-variant-numeric:tabular-nums;
+  }
+
+  .titulo h1{ font-size:23px; font-weight:800; letter-spacing:-.025em; line-height:1.1; }
+  .titulo p{ font-size:13px; color:var(--apagado); margin-top:3px; }
+
+  #combo{
+    position:absolute; top:16px; right:18px;
+    font-size:27px; font-weight:900; font-style:italic;
+    color:var(--ambar); letter-spacing:-.03em;
+    text-shadow:0 0 22px rgba(255,176,32,.6);
+    opacity:0; pointer-events:none; z-index:40;
+  }
+  #combo.ativo{ animation:combo-pop .62s cubic-bezier(.2,1.5,.4,1); }
+  @keyframes combo-pop{
+    0%  { opacity:0; transform:scale(.4) rotate(-14deg); }
+    35% { opacity:1; transform:scale(1.25) rotate(4deg); }
+    70% { opacity:1; transform:scale(1) rotate(0deg); }
+    100%{ opacity:0; transform:scale(1.05) translateY(-14px); }
+  }
+
+  /* botão que abre a folha */
+  .abrir{
+    width:100%; margin-top:14px; display:flex; align-items:center; gap:11px;
+    background:var(--superficie); border:1px solid var(--linha);
+    border-radius:var(--raio); padding:14px 15px;
+    color:var(--tenue); font-size:16px; font-family:inherit; text-align:left;
+    cursor:pointer; transition:transform .12s, border-color .15s;
+  }
+  .abrir:active{ transform:scale(.985); border-color:var(--lima-escura); }
+  .abrir .mais{
+    margin-left:auto; flex:none; width:30px; height:30px; border-radius:10px;
+    background:var(--lima); color:#0d1400;
+    display:grid; place-items:center; font-size:21px; font-weight:800; line-height:1;
+  }
+
+  .frequentes{ display:flex; gap:7px; margin-top:11px; overflow-x:auto;
+    scrollbar-width:none; padding-bottom:2px; }
+  .frequentes::-webkit-scrollbar{ display:none; }
+  .frequentes button{
+    flex:none; background:var(--superficie); border:1px solid var(--linha);
+    color:var(--apagado); border-radius:999px; padding:7px 14px;
+    font-size:13px; font-weight:600; font-family:inherit;
+    cursor:pointer; white-space:nowrap; transition:all .15s;
+  }
+  .frequentes button:active{ background:var(--superficie-alta); color:var(--texto); transform:scale(.93); }
+
+  /* ================= LISTA ================= */
+  main{ flex:1; overflow-y:auto; padding:14px 18px 20px; -webkit-overflow-scrolling:touch; }
+
+  .categoria{ margin-bottom:22px; }
+  .cabecalho-cat{ display:flex; align-items:center; gap:9px; margin-bottom:9px; }
+  .ponto{ width:8px; height:8px; border-radius:50%; flex:none; }
+  .cabecalho-cat span{ font-size:11px; font-weight:800; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--apagado); }
+  .cabecalho-cat i{ flex:1; height:1px; background:var(--linha); }
+  .cabecalho-cat em{ font-style:normal; font-size:11px; font-weight:700;
+    color:var(--apagado); font-variant-numeric:tabular-nums; }
+
+  .item{
+    display:flex; align-items:center; gap:12px;
+    background:var(--superficie); border:1px solid var(--linha);
+    border-radius:var(--raio); padding:12px 13px; margin-bottom:8px;
+    transition:opacity .3s, transform .18s, background .25s, border-color .25s;
+  }
+  .item:active{ transform:scale(.985); }
+  .item.feito{ opacity:.38; background:transparent; }
+  .item.novo{ animation:entrar .42s cubic-bezier(.2,1.3,.4,1); }
+  @keyframes entrar{
+    from{ opacity:0; transform:translateY(-10px) scale(.96); }
+    to  { opacity:1; transform:none; }
+  }
+
+  .caixa{
+    flex:none; width:27px; height:27px; border-radius:9px;
+    border:2px solid var(--linha); background:transparent;
+    display:grid; place-items:center; cursor:pointer;
+    transition:all .2s cubic-bezier(.2,1.4,.4,1);
+  }
+  .caixa svg{ width:16px; height:16px; stroke:#0d1400; stroke-width:3.4; fill:none;
+    stroke-linecap:round; stroke-linejoin:round;
+    stroke-dasharray:22; stroke-dashoffset:22; }
+  .item.feito .caixa{ background:var(--lima); border-color:var(--lima); transform:scale(1.06); }
+  .item.feito .caixa svg{ stroke-dashoffset:0; transition:stroke-dashoffset .25s .05s; }
+
+  .corpo{ flex:1; min-width:0; cursor:pointer; }
+  .linha1{ display:flex; align-items:baseline; gap:7px; }
+  .nome{ font-size:16px; font-weight:600; line-height:1.25;
+    position:relative; overflow-wrap:anywhere; }
+  .nome::after{
+    content:''; position:absolute; left:0; top:52%; height:2px; width:100%;
+    background:var(--lima); border-radius:2px;
+    transform:scaleX(0); transform-origin:left center;
+    transition:transform .28s cubic-bezier(.4,0,.2,1);
+  }
+  .item.feito .nome::after{ transform:scaleX(1); }
+  .qtd{
+    flex:none; background:var(--superficie-alta); color:var(--lima);
+    border-radius:7px; padding:2px 7px;
+    font-size:12px; font-weight:800; font-variant-numeric:tabular-nums;
+  }
+  .unit{ font-size:12px; color:var(--tenue); margin-top:3px;
+    font-variant-numeric:tabular-nums; }
+
+  .valor{
+    flex:none; background:transparent; border:0; padding:6px 2px 6px 6px;
+    font-family:inherit; text-align:right; cursor:pointer; min-width:62px;
+  }
+  .valor b{ display:block; font-size:15px; font-weight:800; color:var(--texto);
+    font-variant-numeric:tabular-nums; }
+  .valor small{ display:block; font-size:10px; color:var(--tenue);
+    letter-spacing:.06em; text-transform:uppercase; font-weight:700; margin-top:1px; }
+  .valor.sem b{ color:var(--tenue); font-weight:600; }
+
+  .lixo{ flex:none; background:transparent; border:0; color:#443e59;
+    font-size:22px; line-height:1; padding:4px 0 4px 8px; cursor:pointer; }
+  .lixo:active{ color:var(--rosa); }
+
+  .vazio{ text-align:center; padding:56px 30px; color:var(--apagado); }
+  .vazio strong{ display:block; font-size:17px; color:var(--texto); margin-bottom:7px; }
+  .vazio p{ font-size:14px; line-height:1.55; }
+
+  /* ================= RODAPÉ ================= */
+  footer{
+    flex:none; border-top:1px solid var(--linha); background:var(--fundo);
+    padding:12px 18px calc(12px + env(safe-area-inset-bottom));
+    display:flex; align-items:center; gap:14px;
+  }
+  .total small{ display:block; font-size:11px; color:var(--apagado);
+    letter-spacing:.1em; text-transform:uppercase; font-weight:700; }
+  .total b{ font-size:25px; font-weight:800; font-variant-numeric:tabular-nums;
+    letter-spacing:-.02em; display:inline-block; }
+  .total b.pulsa{ animation:pulsa .35s ease; }
+  @keyframes pulsa{ 50%{ transform:scale(1.1); color:var(--lima); } }
+
+  footer .acao{
+    margin-left:auto; flex:none; background:var(--lima); color:#0d1400;
+    border:0; border-radius:var(--raio); padding:14px 22px;
+    font-size:15px; font-weight:800; font-family:inherit; letter-spacing:.02em;
+    cursor:pointer; transition:transform .12s;
+  }
+  footer .acao:active{ transform:scale(.95); }
+  footer .acao:disabled{ background:var(--superficie-alta); color:var(--tenue); }
+
+  /* ================= FOLHA DE ADICIONAR ================= */
+  .fundo-folha{
+    position:fixed; inset:0; z-index:50; background:rgba(8,6,14,.7);
+    opacity:0; pointer-events:none; transition:opacity .25s;
+  }
+  .fundo-folha.aberta{ opacity:1; pointer-events:auto; }
+
+  .folha{
+    position:fixed; left:0; right:0; bottom:0; z-index:51;
+    background:var(--superficie); border-top:1px solid var(--linha);
+    border-radius:24px 24px 0 0;
+    padding:10px 18px calc(18px + env(safe-area-inset-bottom));
+    transform:translateY(102%);
+    transition:transform .34s cubic-bezier(.2,.9,.25,1);
+    max-height:92vh; overflow-y:auto;
+  }
+  .folha.aberta{ transform:none; }
+
+  .puxador{ width:42px; height:4px; border-radius:99px; background:var(--linha);
+    margin:0 auto 16px; }
+
+  .folha h2{ font-size:19px; font-weight:800; letter-spacing:-.02em; margin-bottom:14px; }
+
+  .campo-nome{
+    width:100%; background:var(--superficie-alta); border:1px solid var(--linha);
+    border-radius:var(--raio); padding:14px 15px; color:var(--texto);
+    font-size:17px; font-weight:600; font-family:inherit; outline:none;
+    transition:border-color .15s;
+  }
+  .campo-nome:focus{ border-color:var(--lima-escura); }
+  .campo-nome::placeholder{ color:var(--tenue); font-weight:400; }
+
+  .sugestoes{ display:flex; gap:7px; margin-top:9px; overflow-x:auto;
+    scrollbar-width:none; min-height:0; }
+  .sugestoes::-webkit-scrollbar{ display:none; }
+  .sugestoes button{
+    flex:none; background:transparent; border:1px solid var(--linha);
+    color:var(--apagado); border-radius:999px; padding:6px 12px;
+    font-size:13px; font-family:inherit; cursor:pointer;
+  }
+  .sugestoes button:active{ border-color:var(--lima); color:var(--lima); }
+
+  .grade{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px; }
+  .bloco{ background:var(--superficie-alta); border:1px solid var(--linha);
+    border-radius:var(--raio); padding:12px; }
+  .bloco > label{
+    display:block; font-size:10px; font-weight:800; letter-spacing:.13em;
+    text-transform:uppercase; color:var(--apagado); margin-bottom:9px;
+  }
+
+  .passo{ display:flex; align-items:center; gap:8px; }
+  .passo button{
+    flex:none; width:38px; height:38px; border-radius:11px;
+    background:var(--superficie); border:1px solid var(--linha);
+    color:var(--texto); font-size:21px; font-weight:800; line-height:1;
+    font-family:inherit; cursor:pointer; transition:transform .1s, background .15s;
+  }
+  .passo button:active{ transform:scale(.9); background:var(--lima); color:#0d1400; }
+  .passo b{ flex:1; text-align:center; font-size:22px; font-weight:800;
+    font-variant-numeric:tabular-nums; }
+
+  .moeda{ display:flex; align-items:center; gap:5px; }
+  .moeda span{ font-size:16px; font-weight:700; color:var(--apagado); }
+  .moeda input{
+    flex:1; min-width:0; background:transparent; border:0; outline:none;
+    color:var(--texto); font-size:22px; font-weight:800; font-family:inherit;
+    font-variant-numeric:tabular-nums; padding:4px 0;
+  }
+  .moeda input::placeholder{ color:var(--tenue); font-weight:600; }
+
+  .cats{ display:flex; gap:7px; margin-top:14px; overflow-x:auto; scrollbar-width:none; }
+  .cats::-webkit-scrollbar{ display:none; }
+  .cats button{
+    flex:none; display:flex; align-items:center; gap:6px;
+    background:var(--superficie-alta); border:1px solid var(--linha);
+    color:var(--apagado); border-radius:999px; padding:7px 13px;
+    font-size:13px; font-weight:600; font-family:inherit; cursor:pointer;
+    transition:all .15s;
+  }
+  .cats button i{ width:7px; height:7px; border-radius:50%; flex:none; }
+  .cats button.sel{ border-color:var(--lima); color:var(--texto); background:var(--superficie); }
+
+  .previa{
+    margin-top:16px; padding:13px 15px; border-radius:var(--raio);
+    background:var(--superficie-alta); border:1px dashed var(--linha);
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+  }
+  .previa span{ font-size:13px; color:var(--apagado); font-variant-numeric:tabular-nums; }
+  .previa b{ font-size:19px; font-weight:800; color:var(--lima);
+    font-variant-numeric:tabular-nums; }
+
+  .confirmar{
+    width:100%; margin-top:16px; background:var(--lima); color:#0d1400;
+    border:0; border-radius:var(--raio); padding:16px;
+    font-size:16px; font-weight:800; font-family:inherit; letter-spacing:.02em;
+    cursor:pointer; transition:transform .12s;
+  }
+  .confirmar:active{ transform:scale(.97); }
+  .confirmar:disabled{ background:var(--superficie-alta); color:var(--tenue); }
+
+  /* ================= CONFETE + FINAL ================= */
+  #confete{ position:fixed; inset:0; pointer-events:none; z-index:60; }
+
+  #final{
+    position:fixed; inset:0; z-index:70; background:rgba(10,8,16,.94);
+    display:none; flex-direction:column; align-items:center; justify-content:center;
+    padding:34px; text-align:center;
+  }
+  #final.aberto{ display:flex; animation:surge .3s ease; }
+  @keyframes surge{ from{ opacity:0; } to{ opacity:1; } }
+  #final h2{ font-size:38px; font-weight:900; letter-spacing:-.035em;
+    line-height:1; color:var(--lima); margin-bottom:8px; }
+  #final .sub{ font-size:15px; color:var(--apagado); margin-bottom:28px; }
+  .placar{ display:flex; gap:12px; margin-bottom:30px; }
+  .placar div{ background:var(--superficie); border:1px solid var(--linha);
+    border-radius:var(--raio); padding:15px 18px; min-width:92px; }
+  .placar b{ display:block; font-size:26px; font-weight:800;
+    font-variant-numeric:tabular-nums; letter-spacing:-.02em; }
+  .placar small{ font-size:10px; color:var(--apagado); font-weight:700;
+    letter-spacing:.12em; text-transform:uppercase; }
+  #final button{ background:var(--lima); color:#0d1400; border:0;
+    border-radius:var(--raio); padding:15px 34px;
+    font-size:16px; font-weight:800; font-family:inherit; cursor:pointer; }
+  #final button:active{ transform:scale(.95); }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:.01ms !important; transition-duration:.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<div id="combo"></div>
+
+<header>
+  <div class="topo">
+    <div class="anel">
+      <svg width="56" height="56">
+        <circle class="trilho" cx="28" cy="28" r="23"></circle>
+        <circle class="barra" id="anel-barra" cx="28" cy="28" r="23"
+                stroke-dasharray="144.5" stroke-dashoffset="144.5"></circle>
+      </svg>
+      <b id="anel-txt">0%</b>
+    </div>
+    <div class="titulo">
+      <h1>Mercado</h1>
+      <p id="resumo">Lista vazia</p>
+    </div>
+  </div>
+
+  <button class="abrir" id="abrir">
+    O que falta comprar?
+    <span class="mais">+</span>
+  </button>
+
+  <div class="frequentes" id="frequentes"></div>
+</header>
+
+<main id="lista"></main>
+
+<footer>
+  <div class="total">
+    <small>Total</small>
+    <b id="total">R$ 0,00</b>
+  </div>
+  <button class="acao" id="finalizar" disabled>Finalizar</button>
+</footer>
+
+<div class="fundo-folha" id="fundo-folha"></div>
+<div class="folha" id="folha">
+  <div class="puxador"></div>
+  <h2 id="folha-titulo">Novo item</h2>
+
+  <input class="campo-nome" id="f-nome" type="text" placeholder="Ex.: leite integral"
+         autocomplete="off" autocorrect="off" enterkeyhint="done">
+  <div class="sugestoes" id="f-sugestoes"></div>
+
+  <div class="grade">
+    <div class="bloco">
+      <label>Quantidade</label>
+      <div class="passo">
+        <button id="f-menos" aria-label="Menos">−</button>
+        <b id="f-qtd">1</b>
+        <button id="f-mais" aria-label="Mais">+</button>
+      </div>
+    </div>
+    <div class="bloco">
+      <label>Preço por unidade</label>
+      <div class="moeda">
+        <span>R$</span>
+        <input id="f-preco" type="number" inputmode="decimal" step="0.01"
+               placeholder="0,00" enterkeyhint="done">
+      </div>
+    </div>
+  </div>
+
+  <div class="cats" id="f-cats"></div>
+
+  <div class="previa">
+    <span id="f-conta">1 × —</span>
+    <b id="f-total">R$ 0,00</b>
+  </div>
+
+  <button class="confirmar" id="f-confirmar" disabled>Adicionar à lista</button>
+</div>
+
+<canvas id="confete"></canvas>
+
+<div id="final">
+  <h2 id="final-titulo">Compra feita!</h2>
+  <p class="sub" id="final-sub"></p>
+  <div class="placar">
+    <div><b id="p-itens">0</b><small>Itens</small></div>
+    <div><b id="p-tempo">0:00</b><small>Tempo</small></div>
+    <div><b id="p-combo">0</b><small>Combo máx</small></div>
+  </div>
+  <button id="nova">Nova lista</button>
+</div>
+
+<script>
+/* ==========================================================
+   Estado
+   ========================================================== */
+const CHAVE = "mercado.v1";
+let dados = carregar();
+
+function carregar(){
+  try{
+    const d = JSON.parse(localStorage.getItem(CHAVE));
+    if (d && Array.isArray(d.itens)){
+      d.precos ||= {};           // último preço por produto
+      d.frequentes ||= {};
+      return d;
+    }
+  }catch(e){}
+  return { itens: [], frequentes: {}, precos: {}, inicio: null, comboMax: 0 };
+}
+function salvar(){ localStorage.setItem(CHAVE, JSON.stringify(dados)); }
+
+/* ==========================================================
+   Categorias
+   ========================================================== */
+const CATEGORIAS = [
+  ["Hortifrúti", "#7fc21a", ["alface","tomate","cebola","alho","batata","cenoura","banana","maçã","maca","laranja","limão","limao","mamão","mamao","abacaxi","uva","manga","melancia","abobrinha","pepino","pimentão","pimentao","brócolis","brocolis","couve","repolho","beterraba","chuchu","mandioca","salsa","cheiro","coentro","rúcula","rucula","espinafre","morango","abacate","pera","kiwi","melão","melao","milho verde","vagem","berinjela","gengibre","fruta","verdura","legume"]],
+  ["Açougue",    "#ff5470", ["carne","frango","peito","coxa","picanha","alcatra","patinho","costela","linguiça","linguica","bacon","peixe","tilápia","tilapia","salmão","salmao","camarão","camarao","hambúrguer","hamburguer","bife","moída","moida","pernil","lombo","salsicha"]],
+  ["Laticínios", "#63b3ff", ["leite","queijo","manteiga","iogurte","requeijão","requeijao","creme","nata","mussarela","muçarela","presunto","ricota","catupiry","margarina","ovo","ovos"]],
+  ["Padaria",    "#f0a35e", ["pão","pao","bisnaga","bolo","torrada","croissant","baguete","rosca","biscoito","bolacha","panetone"]],
+  ["Bebidas",    "#c07fff", ["água","agua","refrigerante","coca","guaraná","guarana","suco","cerveja","vinho","café","cafe","chá","cha","energético","energetico","achocolatado","isotônico","isotonico","whisky","vodka","gin"]],
+  ["Limpeza",    "#3fd9c0", ["sabão","sabao","detergente","amaciante","desinfetante","sanitária","sanitaria","cândida","candida","esponja","vassoura","rodo","lixo","multiuso","álcool","alcool","limpa","veja","pinho","cloro","lustra"]],
+  ["Higiene",    "#ff8fc8", ["shampoo","xampu","condicionador","sabonete","pasta","escova","desodorante","higiênico","higienico","absorvente","fralda","lenço","lenco","cotonete","barbear","gilete","hidratante","perfume","fio dental","enxaguante"]],
+  ["Mercearia",  "#ffb020", ["arroz","feijão","feijao","macarrão","macarrao","óleo","oleo","azeite","sal","açúcar","acucar","farinha","molho","extrato","atum","sardinha","milho","ervilha","tempero","vinagre","fubá","fuba","aveia","granola","cereal","mel","geleia","amendoim","castanha","chocolate","bala","salgadinho","pipoca","lasanha","nescau","condensado"]],
+  ["Outros",     "#8f8aa3", []],
+];
+const COR_CAT = Object.fromEntries(CATEGORIAS.map(c => [c[0], c[1]]));
+
+function categorizar(nome){
+  const n = nome.toLowerCase();
+  for (const [cat, , chaves] of CATEGORIAS){
+    if (chaves.some(k => n.includes(k))) return cat;
+  }
+  return "Outros";
+}
+
+/* ==========================================================
+   Som e vibração
+   ========================================================== */
+let ctxAudio = null;
+function audio(){
+  if (!ctxAudio) ctxAudio = new (window.AudioContext || window.webkitAudioContext)();
+  if (ctxAudio.state === "suspended") ctxAudio.resume();
+  return ctxAudio;
+}
+function toque(freq, dur=0.09, tipo="triangle", vol=0.16){
+  try{
+    const c = audio(), o = c.createOscillator(), g = c.createGain();
+    o.type = tipo; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + dur);
+    o.connect(g); g.connect(c.destination);
+    o.start(); o.stop(c.currentTime + dur);
+  }catch(e){}
+}
+function somFinal(){
+  [523,659,784,1047].forEach((f,i) => setTimeout(() => toque(f,0.18,"triangle",0.14), i*95));
+}
+function vibrar(){
+  try{
+    const H = window.Capacitor?.Plugins?.Haptics;
+    if (H) H.impact({ style:"LIGHT" });
+    else if (navigator.vibrate) navigator.vibrate(16);
+  }catch(e){}
+}
+
+/* ==========================================================
+   Confete
+   ========================================================== */
+const cv = document.getElementById("confete");
+const cx = cv.getContext("2d");
+let particulas = [], rodando = false;
+const CORES = ["#b8ff3c","#ffb020","#ff5470","#7fc21a","#ffffff"];
+
+function dimensionar(){
+  cv.width = innerWidth * devicePixelRatio;
+  cv.height = innerHeight * devicePixelRatio;
+  cx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+}
+addEventListener("resize", dimensionar); dimensionar();
+
+function estourar(x, y, qtd=26, forca=1){
+  for (let i=0;i<qtd;i++){
+    const ang = Math.random()*Math.PI*2;
+    const vel = (2.5+Math.random()*6)*forca;
+    particulas.push({
+      x, y, vx:Math.cos(ang)*vel, vy:Math.sin(ang)*vel-3.5*forca,
+      g:0.28+Math.random()*0.14, cor:CORES[(Math.random()*CORES.length)|0],
+      l:4+Math.random()*6, a:1, rot:Math.random()*6.3, vrot:(Math.random()-.5)*.4,
+    });
+  }
+  if (!rodando) animar();
+}
+function animar(){
+  rodando = true;
+  cx.clearRect(0,0,innerWidth,innerHeight);
+  particulas = particulas.filter(p => p.a > .02 && p.y < innerHeight+40);
+  for (const p of particulas){
+    p.x+=p.vx; p.y+=p.vy; p.vy+=p.g; p.vx*=.99; p.a-=.0085; p.rot+=p.vrot;
+    cx.save(); cx.translate(p.x,p.y); cx.rotate(p.rot);
+    cx.globalAlpha = Math.max(0,p.a); cx.fillStyle = p.cor;
+    cx.fillRect(-p.l/2,-p.l/2,p.l,p.l*1.5); cx.restore();
+  }
+  if (particulas.length) requestAnimationFrame(animar);
+  else { rodando = false; cx.clearRect(0,0,innerWidth,innerHeight); }
+}
+
+/* ==========================================================
+   Combo
+   ========================================================== */
+let combo = 0, comboTimer = null;
+const elCombo = document.getElementById("combo");
+function marcarCombo(){
+  combo++;
+  if (combo > (dados.comboMax||0)) dados.comboMax = combo;
+  clearTimeout(comboTimer);
+  comboTimer = setTimeout(() => combo = 0, 6000);
+  if (combo >= 2){
+    elCombo.textContent = "x"+combo;
+    elCombo.classList.remove("ativo"); void elCombo.offsetWidth;
+    elCombo.classList.add("ativo");
+  }
+  return combo;
+}
+
+/* ==========================================================
+   Folha de adicionar / editar
+   ========================================================== */
+const folha      = document.getElementById("folha");
+const fundoFolha = document.getElementById("fundo-folha");
+const fNome      = document.getElementById("f-nome");
+const fQtd       = document.getElementById("f-qtd");
+const fPreco     = document.getElementById("f-preco");
+const fCats      = document.getElementById("f-cats");
+const fConta     = document.getElementById("f-conta");
+const fTotal     = document.getElementById("f-total");
+const fConfirmar = document.getElementById("f-confirmar");
+const fSugestoes = document.getElementById("f-sugestoes");
+
+let rascunho = { qtd:1, cat:null, editando:null };
+
+// chips de categoria
+for (const [cat, cor] of CATEGORIAS){
+  const b = document.createElement("button");
+  b.innerHTML = `<i style="background:${cor}"></i>${cat}`;
+  b.addEventListener("click", () => { rascunho.cat = cat; rascunho.manual = true; pintarCats(); });
+  b.dataset.cat = cat;
+  fCats.appendChild(b);
+}
+function pintarCats(){
+  for (const b of fCats.children) b.classList.toggle("sel", b.dataset.cat === rascunho.cat);
+}
+
+function abrirFolha(item = null){
+  rascunho = { qtd: item ? item.qtd : 1, cat: item ? item.cat : null,
+               editando: item ? item.id : null, manual: !!item };
+  document.getElementById("folha-titulo").textContent = item ? "Editar item" : "Novo item";
+  fConfirmar.textContent = item ? "Salvar" : "Adicionar à lista";
+  fNome.value  = item ? item.nome : "";
+  fPreco.value = item && item.preco ? item.preco : "";
+  fQtd.textContent = rascunho.qtd;
+  pintarCats(); atualizarPrevia(); renderSugestoes();
+
+  fundoFolha.classList.add("aberta");
+  folha.classList.add("aberta");
+  setTimeout(() => fNome.focus(), 260);
+}
+function fecharFolha(){
+  folha.classList.remove("aberta");
+  fundoFolha.classList.remove("aberta");
+  fNome.blur(); fPreco.blur();
+}
+
+document.getElementById("abrir").addEventListener("click", () => abrirFolha());
+fundoFolha.addEventListener("click", fecharFolha);
+
+document.getElementById("f-menos").addEventListener("click", () => {
+  if (rascunho.qtd > 1){ rascunho.qtd--; fQtd.textContent = rascunho.qtd;
+    toque(340,0.05,"sine",0.1); vibrar(); atualizarPrevia(); }
+});
+document.getElementById("f-mais").addEventListener("click", () => {
+  if (rascunho.qtd < 99){ rascunho.qtd++; fQtd.textContent = rascunho.qtd;
+    toque(460+rascunho.qtd*12,0.05,"sine",0.1); vibrar(); atualizarPrevia(); }
+});
+
+fNome.addEventListener("input", () => {
+  // "2 leite" digitado direto continua funcionando
+  const m = fNome.value.match(/^(\d{1,2})\s*x?\s+(.+)$/i);
+  if (m){
+    rascunho.qtd = Math.max(1, Math.min(99, parseInt(m[1],10)));
+    fQtd.textContent = rascunho.qtd;
+    fNome.value = m[2];
+  }
+  if (!rascunho.manual){
+    rascunho.cat = fNome.value.trim() ? categorizar(fNome.value) : null;
+    pintarCats();
+  }
+  // preço lembrado da última vez que comprou esse produto
+  const lembrado = dados.precos[normalizar(fNome.value)];
+  if (lembrado && !fPreco.value && !rascunho.editando) fPreco.value = lembrado;
+
+  atualizarPrevia(); renderSugestoes();
+});
+fPreco.addEventListener("input", atualizarPrevia);
+fNome.addEventListener("keydown", e => { if (e.key === "Enter") fPreco.focus(); });
+fPreco.addEventListener("keydown", e => { if (e.key === "Enter") fConfirmar.click(); });
+
+function normalizar(s){ return s.trim().toLowerCase(); }
+
+function atualizarPrevia(){
+  const nome = fNome.value.trim();
+  const preco = parseFloat(String(fPreco.value).replace(",", "."));
+  const tem = !isNaN(preco) && preco > 0;
+  fConta.textContent = `${rascunho.qtd} × ${tem ? moeda(preco) : "—"}`;
+  fTotal.textContent = tem ? moeda(preco * rascunho.qtd) : "R$ 0,00";
+  fConfirmar.disabled = !nome;
+}
+
+function renderSugestoes(){
+  const termo = normalizar(fNome.value);
+  const naLista = new Set(dados.itens.filter(i => !i.feito).map(i => normalizar(i.nome)));
+  const lista = Object.entries(dados.frequentes)
+    .filter(([n]) => !naLista.has(normalizar(n)))
+    .filter(([n]) => !termo || normalizar(n).includes(termo))
+    .sort((a,b) => b[1]-a[1]).slice(0,8);
+
+  fSugestoes.innerHTML = "";
+  for (const [n] of lista){
+    const b = document.createElement("button");
+    b.textContent = n;
+    b.addEventListener("click", () => {
+      fNome.value = n;
+      const p = dados.precos[normalizar(n)];
+      if (p) fPreco.value = p;
+      if (!rascunho.manual){ rascunho.cat = categorizar(n); pintarCats(); }
+      atualizarPrevia(); renderSugestoes(); fPreco.focus();
+    });
+    fSugestoes.appendChild(b);
+  }
+}
+
+fConfirmar.addEventListener("click", () => {
+  const bruto = fNome.value.trim();
+  if (!bruto) return;
+  const nome = bruto.charAt(0).toUpperCase() + bruto.slice(1);
+  const p = parseFloat(String(fPreco.value).replace(",", "."));
+  const preco = (!isNaN(p) && p > 0) ? p : null;
+  const cat = rascunho.cat || categorizar(nome);
+
+  if (preco) dados.precos[normalizar(nome)] = preco;
+
+  if (rascunho.editando){
+    const item = dados.itens.find(i => i.id === rascunho.editando);
+    if (item) Object.assign(item, { nome, qtd:rascunho.qtd, preco, cat });
+  } else {
+    const existente = dados.itens.find(i => normalizar(i.nome) === normalizar(nome) && !i.feito);
+    if (existente){
+      existente.qtd += rascunho.qtd;
+      if (preco) existente.preco = preco;
+    } else {
+      dados.itens.push({
+        id: Date.now()+Math.random(), nome, qtd:rascunho.qtd, preco, cat,
+        feito:false, novo:true,
+      });
+    }
+  }
+  toque(700,0.07,"sine",0.12); vibrar();
+  salvar(); fecharFolha(); render(); renderFrequentes();
+});
+
+/* ==========================================================
+   Ações da lista
+   ========================================================== */
+function alternar(id, elemento){
+  const item = dados.itens.find(i => i.id === id);
+  if (!item) return;
+  item.feito = !item.feito;
+
+  if (item.feito){
+    if (!dados.inicio) dados.inicio = Date.now();
+    const c = marcarCombo();
+    const r = elemento.getBoundingClientRect();
+    estourar(r.left+20, r.top+r.height/2, 20+Math.min(c,6)*8, 1+Math.min(c,6)*.12);
+    toque(520+Math.min(c,8)*75, 0.1, "triangle", 0.17);
+    vibrar();
+    dados.frequentes[item.nome] = (dados.frequentes[item.nome]||0)+1;
+  } else {
+    combo = 0; toque(280,0.07,"sine",0.1);
+  }
+  salvar(); render();
+}
+function remover(id){
+  dados.itens = dados.itens.filter(i => i.id !== id);
+  toque(200,0.08,"sine",0.1);
+  salvar(); render(); renderFrequentes();
+}
+
+/* ==========================================================
+   Render
+   ========================================================== */
+const elLista = document.getElementById("lista");
+function moeda(v){ return "R$ " + v.toFixed(2).replace(".", ","); }
+function escapar(s){
+  return s.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+let totalAnterior = 0;
+function render(){
+  const itens = dados.itens;
+  const feitos = itens.filter(i => i.feito).length;
+  const pct = itens.length ? Math.round(feitos/itens.length*100) : 0;
+
+  const circ = 2*Math.PI*23;
+  document.getElementById("anel-barra").style.strokeDashoffset = circ*(1-pct/100);
+  document.getElementById("anel-txt").textContent = pct+"%";
+  document.getElementById("resumo").textContent =
+    itens.length ? `${feitos} de ${itens.length} no carrinho` : "Lista vazia";
+
+  const total = itens.reduce((s,i) => s + (i.preco||0)*i.qtd, 0);
+  const elTotal = document.getElementById("total");
+  elTotal.textContent = moeda(total);
+  if (total !== totalAnterior){
+    elTotal.classList.remove("pulsa"); void elTotal.offsetWidth; elTotal.classList.add("pulsa");
+    totalAnterior = total;
+  }
+  document.getElementById("finalizar").disabled = !itens.length;
+
+  const grupos = {};
+  for (const i of itens) (grupos[i.cat] ||= []).push(i);
+
+  elLista.innerHTML = "";
+  if (!itens.length){
+    elLista.innerHTML = `<div class="vazio">
+      <strong>Nada na lista ainda</strong>
+      <p>Toca em <b>+</b> pra montar a lista com<br>quantidade e preço de uma vez só.</p>
+    </div>`;
+    return;
+  }
+
+  for (const [cat] of CATEGORIAS){
+    const g = grupos[cat];
+    if (!g) continue;
+    g.sort((a,b) => (a.feito === b.feito) ? 0 : (a.feito ? 1 : -1));
+
+    const bloco = document.createElement("section");
+    bloco.className = "categoria";
+    bloco.innerHTML = `<div class="cabecalho-cat">
+        <i class="ponto" style="background:${COR_CAT[cat]}"></i>
+        <span>${cat}</span><i></i>
+        <em>${g.filter(i=>i.feito).length}/${g.length}</em>
+      </div>`;
+
+    for (const item of g){
+      const linha = document.createElement("div");
+      linha.className = "item" + (item.feito ? " feito" : "") + (item.novo ? " novo" : "");
+      if (item.novo){ delete item.novo; }
+
+      const totalItem = (item.preco||0) * item.qtd;
+      linha.innerHTML = `
+        <div class="caixa">
+          <svg viewBox="0 0 24 24"><polyline points="4,12.5 9.5,18 20,6.5"></polyline></svg>
+        </div>
+        <div class="corpo">
+          <div class="linha1">
+            <span class="nome">${escapar(item.nome)}</span>
+            ${item.qtd > 1 ? `<span class="qtd">${item.qtd}×</span>` : ""}
+          </div>
+          ${item.preco ? `<div class="unit">${moeda(item.preco)} cada</div>` : ""}
+        </div>
+        <button class="valor ${item.preco ? "" : "sem"}">
+          <b>${item.preco ? moeda(totalItem) : "R$ –"}</b>
+          <small>${item.preco ? "editar" : "add preço"}</small>
+        </button>
+        <button class="lixo" aria-label="Remover">×</button>`;
+
+      const marcar = () => alternar(item.id, linha);
+      linha.querySelector(".caixa").addEventListener("click", marcar);
+      linha.querySelector(".corpo").addEventListener("click", marcar);
+      linha.querySelector(".valor").addEventListener("click", e => {
+        e.stopPropagation(); abrirFolha(item);
+      });
+      linha.querySelector(".lixo").addEventListener("click", e => {
+        e.stopPropagation(); remover(item.id);
+      });
+      bloco.appendChild(linha);
+    }
+    elLista.appendChild(bloco);
+  }
+  salvar();
+}
+
+function renderFrequentes(){
+  const cont = document.getElementById("frequentes");
+  const naLista = new Set(dados.itens.filter(i => !i.feito).map(i => normalizar(i.nome)));
+  const top = Object.entries(dados.frequentes)
+    .filter(([n]) => !naLista.has(normalizar(n)))
+    .sort((a,b) => b[1]-a[1]).slice(0,10);
+
+  cont.innerHTML = "";
+  for (const [nome] of top){
+    const b = document.createElement("button");
+    b.textContent = "+ " + nome;
+    b.addEventListener("click", () => {
+      abrirFolha();
+      fNome.value = nome;
+      const p = dados.precos[normalizar(nome)];
+      if (p) fPreco.value = p;
+      rascunho.cat = categorizar(nome); pintarCats();
+      atualizarPrevia(); renderSugestoes();
+    });
+    cont.appendChild(b);
+  }
+}
+
+/* ==========================================================
+   Finalizar
+   ========================================================== */
+document.getElementById("finalizar").addEventListener("click", () => {
+  const feitos = dados.itens.filter(i => i.feito);
+  const total = dados.itens.reduce((s,i) => s + (i.preco||0)*i.qtd, 0);
+  const seg = dados.inicio ? Math.round((Date.now()-dados.inicio)/1000) : 0;
+
+  document.getElementById("p-itens").textContent = feitos.length;
+  document.getElementById("p-tempo").textContent =
+    Math.floor(seg/60) + ":" + String(seg%60).padStart(2,"0");
+  document.getElementById("p-combo").textContent = "x" + (dados.comboMax||0);
+
+  const faltaram = dados.itens.length - feitos.length;
+  document.getElementById("final-titulo").textContent =
+    faltaram === 0 ? "Lista zerada!" : "Compra feita!";
+  document.getElementById("final-sub").textContent =
+    (total > 0 ? "Gastou " + moeda(total) : "Sem preços lançados") +
+    (faltaram > 0 ? ` · ${faltaram} ${faltaram===1?"item ficou":"itens ficaram"} pra depois` : "");
+
+  document.getElementById("final").classList.add("aberto");
+  somFinal(); vibrar();
+  for (let i=0;i<5;i++){
+    setTimeout(() => estourar(innerWidth*(.15+Math.random()*.7), innerHeight*.35, 34, 1.5), i*170);
+  }
+});
+
+document.getElementById("nova").addEventListener("click", () => {
+  dados.itens = dados.itens.filter(i => !i.feito).map(i => ({...i, feito:false}));
+  dados.inicio = null; dados.comboMax = 0; combo = 0;
+  salvar();
+  document.getElementById("final").classList.remove("aberto");
+  render(); renderFrequentes();
+});
+
+document.addEventListener("touchstart", () => audio(), { once:true });
+
+render();
+renderFrequentes();
+</script>
+</body>
+</html>

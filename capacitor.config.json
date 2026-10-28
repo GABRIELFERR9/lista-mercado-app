@@ -1,0 +1,14 @@
+{
+  "appId": "br.com.gabriel.mercado",
+  "appName": "Mercado",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#12101a"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "backgroundColor": "#12101a"
+    }
+  }
+}
